@@ -28,7 +28,7 @@ def newton_eq(f, grad_f, nabla_f, x0, A, b, MAXITERS=100, TOL=1e-8,alpha = 0.01,
         print("Iteration: %d, decrement: %f" % (iters, decrement_value))
     return x
 
-def newton(f, grad_f, nabla_f, x0, A, b, domf, MAXITERS=100, TOL=1e-8,alpha = 0.01, beta = 0.8, print_iter=False):
+def newton(f, grad_f, nabla_f, x0, A, b, domf, MAXITERS=100, TOL=1e-8,alpha = 0.01, beta = 0.8, print_iter=False, N=1, diag_only=False):
     MAXITERS = MAXITERS
     TOL = TOL
     alpha = alpha
@@ -41,8 +41,14 @@ def newton(f, grad_f, nabla_f, x0, A, b, domf, MAXITERS=100, TOL=1e-8,alpha = 0.
     decrement_value_list = []
     obj_list = [f(x0)]
     x_list = [x0]
-    for iters in range(MAXITERS):
-        dx = np.linalg.solve(nabla_f(x), -grad_f(x))
+    nabla = nabla_f(x)
+    for iters in range(1, MAXITERS):
+        if iters % N == 0:
+            nabla = nabla_f(x)
+            if diag_only:
+                nabla = np.diag(np.diag(nabla))
+
+        dx = np.linalg.solve(nabla, -grad_f(x))
         dx = dx[:n]
         decrement_value = decrement(dx, x)/2
         decrement_value_list.append(decrement_value)
@@ -52,7 +58,7 @@ def newton(f, grad_f, nabla_f, x0, A, b, domf, MAXITERS=100, TOL=1e-8,alpha = 0.
             break
         t = 1
         while not domf(x + t*dx):
-            print("t: %f" % t)
+            # print("This t is not in domain: %f" % t)
             t *= beta
 
         while f(x + t*dx) > f(x) - alpha * t * decrement_value:
@@ -62,7 +68,7 @@ def newton(f, grad_f, nabla_f, x0, A, b, domf, MAXITERS=100, TOL=1e-8,alpha = 0.
         x_list.append(x)
         obj_list.append(f(x))
         # print("Iteration: %d, decrement: %.10f" % (iters, decrement_value))
-    return x_list, obj_list, decrement_value_list
+    return x_list, obj_list
     
 
 def gradient_descent(f, grad_f, x0, A, b, domf, MAXITERS=100, TOL=1e-8,alpha=0.01, beta=0.8, print_iter=False):
@@ -97,4 +103,4 @@ def gradient_descent(f, grad_f, x0, A, b, domf, MAXITERS=100, TOL=1e-8,alpha=0.0
         x_list.append(x)
         obj_list.append(f(x))
         # print("Iteration: %d, decrement: %.10f" % (iters, decrement_value))
-    return x_list,obj_list, decrement_value_list
+    return x_list, obj_list
