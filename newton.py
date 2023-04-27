@@ -28,7 +28,7 @@ def newton_eq(f, grad_f, nabla_f, x0, A, b, MAXITERS=100, TOL=1e-8,alpha = 0.01,
         print("Iteration: %d, decrement: %f" % (iters, decrement_value))
     return x
 
-def newton(f, grad_f, nabla_f, x0, A, b, domf, MAXITERS=100, TOL=1e-8,alpha = 0.01, beta = 0.8, print_iter=False, N=1, diag_only=False):
+def newton(f, grad_f, nabla_f, x0, A, b, domf, MAXITERS=100, TOL=1e-8,alpha = 0.01, beta = 0.8, print_iter=False, N=1, diag_only=False, decrement_func=None):
     MAXITERS = MAXITERS
     TOL = TOL
     alpha = alpha
@@ -37,7 +37,10 @@ def newton(f, grad_f, nabla_f, x0, A, b, domf, MAXITERS=100, TOL=1e-8,alpha = 0.
     A, b = A, b
     m, n = A.shape
     x = x0
-    decrement = lambda dx, x: (dx.dot(nabla_f(x).dot(dx)))
+    if not decrement_func:
+        decrement = lambda dx, x: (dx.dot(nabla_f(x).dot(dx)))
+    else:
+        decrement = decrement_func
     decrement_value_list = []
     obj_list = [f(x0)]
     x_list = [x0]
@@ -58,7 +61,7 @@ def newton(f, grad_f, nabla_f, x0, A, b, domf, MAXITERS=100, TOL=1e-8,alpha = 0.
             break
         t = 1
         while not domf(x + t*dx):
-            # print("This t is not in domain: %f" % t)
+            print("This t is not in domain: %f" % t)
             t *= beta
 
         while f(x + t*dx) > f(x) - alpha * t * decrement_value:
@@ -67,7 +70,7 @@ def newton(f, grad_f, nabla_f, x0, A, b, domf, MAXITERS=100, TOL=1e-8,alpha = 0.
         x += t*dx
         x_list.append(x)
         obj_list.append(f(x))
-        # print("Iteration: %d, decrement: %.10f" % (iters, decrement_value))
+        print("Iteration: %d, decrement: %.10f" % (iters, decrement_value))
     return x_list, obj_list
     
 
