@@ -110,48 +110,76 @@ def gradient_descent(f, grad_f, x0, A, b, domf, MAXITERS=100, TOL=1e-8,alpha=0.0
     return x_list, obj_list
 
 
-def quasi_newton(f, grad_f, nabla_f, x0, A, b, domf, MAXITERS=100, TOL=1e-8,alpha = 0.01, beta = 0.8, print_iter=False, N=1, diag_only=False, decrement_func=None):
+def quasi_newton(f, grad_f, x0, domf, MAXITERS=100, TOL=1e-8,alpha = 0.01, beta = 0.8, print_iter=False, N=1, diag_only=False, decrement_func=None):
     MAXITERS = MAXITERS
     TOL = TOL
     alpha = alpha
     beta = beta
-    f, grad_f, nabla_f, domf = f, grad_f, nabla_f, domf
-    A, b = A, b
-    m, n = A.shape
+    f, grad_f, domf = f, grad_f, domf
+    
     x = x0.copy()
+    n = len(x)
+    
     if not decrement_func:
-        decrement = lambda dx, x: (dx.dot(nabla_f(x).dot(dx)))/2
+        decrement = lambda dx: np.linalg.norm(dx)**2
     else:
         decrement = decrement_func
+        
     decrement_value_list = []
     obj_list = [f(x)]
     x_list = [x]
-    nabla = nabla_f(x)
+    
+    B_inv = np.eye(n)
+    grad = grad_f(x)
+    
     for iters in range(1, MAXITERS):
-        if iters % N == 0:
-            nabla = nabla_f(x)
-            if diag_only:
-                nabla = np.diag(np.diag(nabla))
+        if iters % N == 0 and iters != 1:
+            B_inv = B_inv_new
+            
+        dx = -B_inv.dot(grad)
 
-        dx = np.linalg.solve(nabla, -grad_f(x))
-        dx = dx[:n]
-        decrement_value = decrement(dx, x)
+        decrement_value = decrement(dx)
         decrement_value_list.append(decrement_value)
         if decrement_value < TOL:
             if print_iter:
                 print("Iteration: %d, decrement: %.10f" % (iters, decrement_value))
             break
         t = 1
+        # Check if t*dx is in still in the domain.
         while not domf(x + t*dx):
-            # print("This t is not in domain: %f" % t)
             t *= beta
-
+        # Backtracking line search.
         while f(x + t*dx) > f(x) - alpha * t * decrement_value:
             t *= beta
 
         x += t*dx
+        grad_new = grad_f(x)
+        # x_{t+1} - x_t = t*dx
+        s = t * dx
+        y = grad_new - grad
+        
+        B_inv_new = (np.eye(n)-np.outer(s,y)/np.dot(y,s)).dot(B_inv).dot(np.eye(n)-np.outer(y,s)/np.dot(y,s)) + np.outer(s,s)/np.dot(y,s)
+        
+        grad = grad_new
+
         x_list.append(x.copy())
         obj_list.append(f(x))
         if print_iter:
             print("Iteration: %d, decrement: %.10f" % (iters, decrement_value))
     return np.array(x_list), obj_list
+
+
+def plot_error_iter(x, fx, cvx_solution, label, color='blue'):
+    plt.semilogy(np.arange(len(x)), fx-cvx_solution, color=color, label=label)
+    
+def solve_by_cvx(A, b):
+    # Use CVXPY to solve the problem with CVXOPT
+    n = A.shape[1]
+    x = cp.Variable(n)
+    objective = cp.Minimize(-cp.sum(cp.log(1 - A @ x)) - cp.sum(cp.log(1 - x**2)))
+    constraints = [A @ x <= b, cp.abs(x) <= 1]
+
+    # Form and solve problem.
+    prob = cp.Problem(objective, constraints)
+    cvx_solution = prob.solve()
+    return cvx_solution
