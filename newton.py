@@ -1,4 +1,6 @@
 import numpy as np
+import cvxpy as cp
+import matplotlib.pyplot as plt
 
 def newton_eq(f, grad_f, nabla_f, x0, A, b, MAXITERS=100, TOL=1e-8,alpha = 0.01, beta = 0.8):
     MAXITERS = MAXITERS
@@ -110,18 +112,18 @@ def gradient_descent(f, grad_f, x0, A, b, domf, MAXITERS=100, TOL=1e-8,alpha=0.0
     return x_list, obj_list
 
 
-def quasi_newton(f, grad_f, x0, domf, MAXITERS=100, TOL=1e-8,alpha = 0.01, beta = 0.8, print_iter=False, N=1, diag_only=False, decrement_func=None):
+def quasi_newton(f, grad_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha = 0.01, beta = 0.8, print_iter=False, N=1, diag_only=False, decrement_func=None):
     MAXITERS = MAXITERS
     TOL = TOL
     alpha = alpha
     beta = beta
-    f, grad_f, domf = f, grad_f, domf
+    f, grad_f, dom_f = f, grad_f, dom_f
     
     x = x0.copy()
     n = len(x)
     
     if not decrement_func:
-        decrement = lambda dx: np.linalg.norm(dx)**2
+        decrement = lambda dx, B: (dx.dot(B.dot(dx)))/2
     else:
         decrement = decrement_func
         
@@ -129,16 +131,14 @@ def quasi_newton(f, grad_f, x0, domf, MAXITERS=100, TOL=1e-8,alpha = 0.01, beta 
     obj_list = [f(x)]
     x_list = [x]
     
+    B = np.eye(n)
     B_inv = np.eye(n)
     grad = grad_f(x)
     
     for iters in range(1, MAXITERS):
-        if iters % N == 0 and iters != 1:
-            B_inv = B_inv_new
-            
         dx = -B_inv.dot(grad)
 
-        decrement_value = decrement(dx)
+        decrement_value = decrement(dx, B)
         decrement_value_list.append(decrement_value)
         if decrement_value < TOL:
             if print_iter:
@@ -146,7 +146,7 @@ def quasi_newton(f, grad_f, x0, domf, MAXITERS=100, TOL=1e-8,alpha = 0.01, beta 
             break
         t = 1
         # Check if t*dx is in still in the domain.
-        while not domf(x + t*dx):
+        while not dom_f(x + t*dx):
             t *= beta
         # Backtracking line search.
         while f(x + t*dx) > f(x) - alpha * t * decrement_value:
@@ -158,8 +158,15 @@ def quasi_newton(f, grad_f, x0, domf, MAXITERS=100, TOL=1e-8,alpha = 0.01, beta 
         s = t * dx
         y = grad_new - grad
         
-        B_inv_new = (np.eye(n)-np.outer(s,y)/np.dot(y,s)).dot(B_inv).dot(np.eye(n)-np.outer(y,s)/np.dot(y,s)) + np.outer(s,s)/np.dot(y,s)
-        
+        if iters % N == 0 and iters != 1:
+            denom = np.dot(y, s)
+            B_new = B - np.outer(B.dot(s), B.dot(s))/np.dot(s, B.dot(s)) + np.outer(y, y)/denom
+            # Woodbury identity
+            B_inv_new = (np.eye(n)-np.outer(s,y)/denom).dot(B_inv).dot(np.eye(n)-np.outer(y,s)/denom) + np.outer(s,s)/denom
+            
+            B_inv = B_inv_new
+            B = B_new
+            
         grad = grad_new
 
         x_list.append(x.copy())
