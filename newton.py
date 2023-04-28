@@ -36,14 +36,14 @@ def newton(f, grad_f, nabla_f, x0, A, b, domf, MAXITERS=100, TOL=1e-8,alpha = 0.
     f, grad_f, nabla_f, domf = f, grad_f, nabla_f, domf
     A, b = A, b
     m, n = A.shape
-    x = x0
+    x = x0.copy()
     if not decrement_func:
-        decrement = lambda dx, x: (dx.dot(nabla_f(x).dot(dx)))
+        decrement = lambda dx, x: (dx.dot(nabla_f(x).dot(dx)))/2
     else:
         decrement = decrement_func
     decrement_value_list = []
-    obj_list = [f(x0)]
-    x_list = [x0]
+    obj_list = [f(x)]
+    x_list = [x]
     nabla = nabla_f(x)
     for iters in range(1, MAXITERS):
         if iters % N == 0:
@@ -53,11 +53,10 @@ def newton(f, grad_f, nabla_f, x0, A, b, domf, MAXITERS=100, TOL=1e-8,alpha = 0.
 
         dx = np.linalg.solve(nabla, -grad_f(x))
         dx = dx[:n]
-        decrement_value = decrement(dx, x)/2
+        decrement_value = decrement(dx, x)
         decrement_value_list.append(decrement_value)
         if decrement_value < TOL:
-            if print_iter:
-                print("Iteration: %d, decrement: %.10f" % (iters, decrement_value))
+            print("Iteration: %d, decrement: %.10f" % (iters, decrement_value))
             break
         t = 1
         while not domf(x + t*dx):
@@ -68,10 +67,11 @@ def newton(f, grad_f, nabla_f, x0, A, b, domf, MAXITERS=100, TOL=1e-8,alpha = 0.
             t *= beta
 
         x += t*dx
-        x_list.append(x)
+        x_list.append(x.copy())
         obj_list.append(f(x))
-        print("Iteration: %d, decrement: %.10f" % (iters, decrement_value))
-    return x_list, obj_list
+        if print_iter:
+            print("Iteration: %d, decrement: %.10f" % (iters, decrement_value))
+    return np.array(x_list), obj_list
     
 
 def gradient_descent(f, grad_f, x0, A, b, domf, MAXITERS=100, TOL=1e-8,alpha=0.01, beta=0.8, print_iter=False):
