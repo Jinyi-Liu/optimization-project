@@ -56,11 +56,12 @@ def newton(f, grad_f, nabla_f, x0, A, b, domf, MAXITERS=100, TOL=1e-8,alpha = 0.
         decrement_value = decrement(dx, x)
         decrement_value_list.append(decrement_value)
         if decrement_value < TOL:
-            print("Iteration: %d, decrement: %.10f" % (iters, decrement_value))
+            if print_iter:
+                print("Iteration: %d, decrement: %.10f" % (iters, decrement_value))
             break
         t = 1
         while not domf(x + t*dx):
-            print("This t is not in domain: %f" % t)
+            # print("This t is not in domain: %f" % t)
             t *= beta
 
         while f(x + t*dx) > f(x) - alpha * t * decrement_value:
