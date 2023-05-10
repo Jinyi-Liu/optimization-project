@@ -67,24 +67,23 @@ def newton(f, grad_f, nabla_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha = 0
                 np.block([-grad_f(x), np.zeros(m)]))[0:n]
         else:
             dx = np.linalg.solve(nabla, -grad_f(x))
+        
+        decrement_value = decrement(dx, x)
         if print_iter:
             print("Iteration: %d, decrement: %.10f" % (iters, decrement_value))
-
-        decrement_value = decrement(dx, x)
-        if decrement_value < TOL:
-    
-            break
+        
         t = 1
         while not dom_f(x + t*dx):
             t *= beta
-            
         # Backtracking line search
         while f(x + t*dx) > f(x) - alpha * t * decrement_value:
             t *= beta
 
         x += t*dx
         obj_list.append(f(x))
-
+        
+        if decrement_value/2 < TOL:
+            break
     return obj_list
     
 
@@ -158,7 +157,7 @@ def quasi_newton(f, grad_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha = 0.01
 
 
 def plot_error_iter(fx, cvx_solution, label, color='blue'):
-    plt.semilogy(np.arange(len(fx)), fx-cvx_solution, color=color, label=label)
+    plt.plot(np.arange(len(fx)), fx-cvx_solution, color=color, label=label)
     
 def solve_by_cvx(A, b):
     # Use CVXPY to solve the problem with CVXOPT
