@@ -101,8 +101,6 @@ def quasi_newton(f, grad_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha = 0.01
         decrement = lambda dx, B: (dx.dot(B.dot(dx)))
     else:
         decrement = decrement_func
-        
-    decrement_value_list = []
     obj_list = [f(x)]
     
     B = np.eye(n)
@@ -111,15 +109,12 @@ def quasi_newton(f, grad_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha = 0.01
     B_new = B.copy()
     for iters in range(0, MAXITERS):
         dx = -B_inv.dot(grad)
-
         decrement_value = decrement(dx, B)
-        decrement_value_list.append(decrement_value)
-        
+
         if print_iter:
             print("Iteration: %d, decrement: %.10f" % (iters, decrement_value))
         if decrement_value < TOL:
             break
-        
         t = 1
         while not dom_f(x + t*dx):
             t *= beta
@@ -144,8 +139,7 @@ def quasi_newton(f, grad_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha = 0.01
             B_inv = B_inv_new
             
         grad = grad_new
-
-        # x_list.append(x.copy())
+        
         obj_list.append(f(x))
         
     return obj_list
