@@ -35,8 +35,48 @@ def gradient_descent(f, grad_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8, alpha=0
 
     return obj_list
 
+# Newton's method for constrained problem
+def newton_eq(f, grad_f, nabla_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha = 0.01, beta = 0.8, print_iter=False, N=1, diag_only=False, decrement_func=None):
+    MAXITERS = MAXITERS
+    TOL = TOL
+    alpha = alpha
+    beta = beta
+    f, grad_f, nabla_f, dom_f = f, grad_f, nabla_f, dom_f
+    A, b = A, b
+    m, n = A.shape
+    x = x0.copy()
+    
+    if not decrement_func:
+        decrement = lambda dx, x: (dx.dot(nabla_f(x).dot(dx)))
+    else:
+        decrement = decrement_func
 
-# Newton's method for inequality constrained problem
+    obj_list = [f(x)]
+    x_list = [x]
+    
+    for iters in range(1, MAXITERS):
+        nabla = nabla_f(x)
+        dx = np.linalg.solve(
+                np.block([[nabla, A.T], [A, np.zeros((m, m))]]),
+                np.block([-grad_f(x), np.zeros(m)]))[0:n]
+        decrement_value = decrement(dx, x)
+        if print_iter:
+            print("Iteration: %d, decrement: %.10f" % (iters, decrement_value))
+        
+        t = 1
+        while not dom_f(x + t*dx):
+            t *= beta
+        # Backtracking line search
+        while f(x + t*dx) > f(x) - alpha * t * decrement_value:
+            t *= beta
+        x += t*dx
+        obj_list.append(f(x))
+        x_list.append(x.copy())
+        if decrement_value/2 < TOL:
+            break
+    return x_list, obj_list
+
+# Newton's method for unconstrained problem
 def newton(f, grad_f, nabla_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha = 0.01, beta = 0.8, print_iter=False, N=1, diag_only=False, decrement_func=None, eq=False):
     MAXITERS = MAXITERS
     TOL = TOL
@@ -143,7 +183,6 @@ def quasi_newton(f, grad_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha = 0.01
         obj_list.append(f(x))
         
     return obj_list
-
 
 
 def plot_error_iter(fx, cvx_solution, label, color='blue'):
