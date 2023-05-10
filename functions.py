@@ -88,14 +88,12 @@ def newton(f, grad_f, nabla_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha = 0
     
 
 
-
 def quasi_newton(f, grad_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha = 0.01, beta = 0.8, print_iter=False, N=1, diag_only=False, decrement_func=None):
     MAXITERS = MAXITERS
     TOL = TOL
     alpha = alpha
     beta = beta
     f, grad_f, dom_f = f, grad_f, dom_f
-    
     x = x0.copy()
     n = len(x)
     
@@ -125,9 +123,6 @@ def quasi_newton(f, grad_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha = 0.01
         t = 1
         while not dom_f(x + t*dx):
             t *= beta
-        # Backtracking line search.
-        # while f(x + t*dx) > f(x) - alpha * t * decrement_value*2:
-        #     t *= beta
         f_x = f(x)
         f_x_new = f(x + t * dx)
         grad_new = grad_f(x + t * dx)
@@ -144,8 +139,9 @@ def quasi_newton(f, grad_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha = 0.01
         if iters % N == 0:
             denom = np.dot(y, s)
             B_new = B - np.outer(B.dot(s), B.dot(s))/np.dot(s, B.dot(s)) + np.outer(y, y)/denom
-            B_inv = (np.eye(n)-np.outer(s,y)/denom).dot(B_inv).dot(np.eye(n)-np.outer(y,s)/denom) + np.outer(s,s)/denom 
+            B_inv_new = (np.eye(n)-np.outer(s,y)/denom).dot(B_inv).dot(np.eye(n)-np.outer(y,s)/denom) + np.outer(s,s)/denom 
             B = B_new
+            B_inv = B_inv_new
             
         grad = grad_new
 
