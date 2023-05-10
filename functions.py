@@ -13,18 +13,20 @@ def gradient_descent(f, grad_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8, alpha=0
     x = x0
     decrement = lambda  dx: np.sum(dx**2)
     obj_list = [f(x0)]
-
+    decrement_value_check = 0
+    alpha_check = 0
     for iters in range(MAXITERS):
         dx = -grad_f(x)
         decrement_value = decrement(dx)
+
         if print_iter:
-            print("Iteration: %d, decrement: %.10f" % (iters, decrement_value))
-        if decrement_value < TOL:
+            print("Iteration: %d, decrement: %.10f" % (iters, decrement_value),alpha_check)
+        if decrement_value**2< TOL:
             break
+        
         t = 1
         while not dom_f(x + t*dx):
             t *= beta
-
         while f(x + t*dx) > f(x) - alpha * t * decrement_value:
             t *= beta
 
@@ -47,13 +49,13 @@ def newton(f, grad_f, nabla_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha = 0
     
     if not decrement_func:
         # Newton decrement
-        decrement = lambda dx, x: (dx.dot(nabla_f(x).dot(dx)))/2
+        decrement = lambda dx, x: (dx.dot(nabla_f(x).dot(dx)))
     else:
         decrement = decrement_func
-    decrement_value_list = []
-    obj_list = [f(x)]
 
+    obj_list = [f(x)]
     nabla = nabla_f(x)
+    
     for iters in range(1, MAXITERS):
         if iters % N == 0:
             nabla = nabla_f(x)
@@ -65,26 +67,24 @@ def newton(f, grad_f, nabla_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha = 0
                 np.block([-grad_f(x), np.zeros(m)]))[0:n]
         else:
             dx = np.linalg.solve(nabla, -grad_f(x))
+        if print_iter:
+            print("Iteration: %d, decrement: %.10f" % (iters, decrement_value))
 
         decrement_value = decrement(dx, x)
-        decrement_value_list.append(decrement_value)
         if decrement_value < TOL:
-            if print_iter:
-                print("Iteration: %d, decrement: %.10f" % (iters, decrement_value))
+    
             break
-        
         t = 1
         while not dom_f(x + t*dx):
             t *= beta
             
         # Backtracking line search
-        while f(x + t*dx) > f(x) - alpha * t * decrement_value*2:
+        while f(x + t*dx) > f(x) - alpha * t * decrement_value:
             t *= beta
 
         x += t*dx
         obj_list.append(f(x))
-        if print_iter:
-            print("Iteration: %d, decrement: %.10f" % (iters, decrement_value))
+
     return obj_list
     
 
@@ -101,7 +101,7 @@ def quasi_newton(f, grad_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha = 0.01
     n = len(x)
     
     if not decrement_func:
-        decrement = lambda dx, B: (dx.dot(B.dot(dx)))/2
+        decrement = lambda dx, B: (dx.dot(B.dot(dx)))
     else:
         decrement = decrement_func
         
@@ -132,7 +132,7 @@ def quasi_newton(f, grad_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha = 0.01
         f_x = f(x)
         f_x_new = f(x + t * dx)
         grad_new = grad_f(x + t * dx)
-        while f_x_new > f_x - alpha * t * decrement_value*2:
+        while f_x_new > f_x - alpha * t * decrement_value:
             t *= beta
             f_x_new = f(x + t * dx)
             grad_new = grad_f(x + t * dx)
