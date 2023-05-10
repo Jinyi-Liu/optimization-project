@@ -107,7 +107,7 @@ def quasi_newton(f, grad_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha = 0.01
     B_inv = np.eye(n)
     grad = grad_f(x)
     B_new = B.copy()
-    for iters in range(0, MAXITERS):
+    for iters in range(1, MAXITERS):
         dx = -B_inv.dot(grad)
         decrement_value = decrement(dx, B)
 
