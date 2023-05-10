@@ -2,7 +2,7 @@ import numpy as np
 import cvxpy as cp
 import matplotlib.pyplot as plt
 
-def gradient_descent(f, grad_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha=0.01, beta=0.8, print_iter=False):
+def gradient_descent(f, grad_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8, alpha=0.01, beta=0.8, print_iter=False):
     MAXITERS = MAXITERS
     TOL = TOL
     alpha = alpha
@@ -12,16 +12,14 @@ def gradient_descent(f, grad_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha=0.
     m, n = A.shape
     x = x0
     decrement = lambda  dx: np.sum(dx**2)
-    decrement_value_list = []
     obj_list = [f(x0)]
-    x_list = [x0]
+
     for iters in range(MAXITERS):
         dx = -grad_f(x)
         decrement_value = decrement(dx)
-        decrement_value_list.append(decrement_value)
+        if print_iter:
+            print("Iteration: %d, decrement: %.10f" % (iters, decrement_value))
         if decrement_value < TOL:
-            if print_iter:
-                print("Iteration: %d, decrement: %.10f" % (iters, decrement_value))
             break
         t = 1
         while not dom_f(x + t*dx):
@@ -29,12 +27,11 @@ def gradient_descent(f, grad_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha=0.
 
         while f(x + t*dx) > f(x) - alpha * t * decrement_value:
             t *= beta
-        # print(dx)
+
         x += t*dx
-        x_list.append(x)
         obj_list.append(f(x))
-        # print("Iteration: %d, decrement: %.10f" % (iters, decrement_value))
-    return x_list, obj_list
+
+    return obj_list
 
 
 # Newton's method for inequality constrained problem
@@ -55,7 +52,7 @@ def newton(f, grad_f, nabla_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha = 0
         decrement = decrement_func
     decrement_value_list = []
     obj_list = [f(x)]
-    x_list = [x]
+
     nabla = nabla_f(x)
     for iters in range(1, MAXITERS):
         if iters % N == 0:
@@ -81,15 +78,14 @@ def newton(f, grad_f, nabla_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha = 0
             t *= beta
             
         # Backtracking line search
-        while f(x + t*dx) > f(x) - alpha * t * decrement_value:
+        while f(x + t*dx) > f(x) - alpha * t * decrement_value*2:
             t *= beta
 
         x += t*dx
-        x_list.append(x.copy())
         obj_list.append(f(x))
         if print_iter:
             print("Iteration: %d, decrement: %.10f" % (iters, decrement_value))
-    return np.array(x_list), obj_list
+    return obj_list
     
 
 
@@ -111,7 +107,6 @@ def quasi_newton(f, grad_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha = 0.01
         
     decrement_value_list = []
     obj_list = [f(x)]
-    x_list = [x]
     
     B = np.eye(n)
     B_inv = np.eye(n)
@@ -132,9 +127,16 @@ def quasi_newton(f, grad_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha = 0.01
         while not dom_f(x + t*dx):
             t *= beta
         # Backtracking line search.
-        while f(x + t*dx) > f(x) - alpha * t * decrement_value:
+        # while f(x + t*dx) > f(x) - alpha * t * decrement_value*2:
+        #     t *= beta
+        f_x = f(x)
+        f_x_new = f(x + t * dx)
+        grad_new = grad_f(x + t * dx)
+        while f_x_new > f_x - alpha * t * decrement_value*2:
             t *= beta
-
+            f_x_new = f(x + t * dx)
+            grad_new = grad_f(x + t * dx)
+            
         x += t*dx
         grad_new = grad_f(x)
         s = t * dx
@@ -148,15 +150,15 @@ def quasi_newton(f, grad_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha = 0.01
             
         grad = grad_new
 
-        x_list.append(x.copy())
+        # x_list.append(x.copy())
         obj_list.append(f(x))
         
-    return np.array(x_list), obj_list
+    return obj_list
 
 
 
-def plot_error_iter(x, fx, cvx_solution, label, color='blue'):
-    plt.semilogy(np.arange(len(x)), fx-cvx_solution, color=color, label=label)
+def plot_error_iter(fx, cvx_solution, label, color='blue'):
+    plt.semilogy(np.arange(len(fx)), fx-cvx_solution, color=color, label=label)
     
 def solve_by_cvx(A, b):
     # Use CVXPY to solve the problem with CVXOPT
