@@ -1,9 +1,3 @@
 # IE602 Nonlinear Optimizationi Course Project
-This project is to implement and compare 5 commonly used second-order methods: Newton’s 
-method, barrier’s method, primal-dual interior-point methods, quasi-Newton
-methods, and proximal Newton method using Python.
+In this project, we implement and compare some commonly used optimization methods: gradient descent, Newton's method, quasi-Newton methods, barrier's method, and primal-dual interior-point methods. We also show the importance of choosing parameters.
 
-
-## Gradient Descent v.s. Newton's Method
-![Gradient Descent v.s. Newton's Method](./figure/gradient_descent_newton_1000_100.png)
-![Gradient Descent v.s. Newton's Method](./figure/gradient_descent_newton_1000_200.png)
