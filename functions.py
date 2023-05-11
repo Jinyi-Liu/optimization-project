@@ -181,7 +181,7 @@ def quasi_newton(f, grad_f, x0, A, b, dom_f, MAXITERS=100, TOL=1e-8,alpha = 0.01
 
 
 def plot_error_iter(fx, cvx_solution, label, color='blue'):
-    plt.scatter(np.arange(len(fx)), fx-cvx_solution, color=color, label=label)
+    plt.plot(np.arange(len(fx)), fx-cvx_solution, color=color, label=label)
     
 def solve_by_cvx(A, b):
     # Use CVXPY to solve the problem with CVXOPT
